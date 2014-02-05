@@ -1,0 +1,14 @@
+table {
+	width: 700px;
+	height: 700px;
+	margin: auto;
+}
+
+#first-row td {
+	border-width: 0px;
+}
+
+td {
+	border-width: 1px;
+	border-style: solid;
+}
