@@ -1,62 +1,71 @@
 var player1 = {
-		playerNumber : 1,
-		color: 'black'
+	playerNumber: 1,
+	color: 'black'
 };
 var player2 = {
-		playerNumber : 2,
-		color: 'gray'
+	playerNumber: 2,
+	color: 'gray'
 };
 var currentPlayer = this.player1;
 
-var Board = {
-	numRows : 6,
-	numCols : 7,
-	grid : [],
+var Game = {
+	numRows: 6,
+	numCols: 7,
 
-	//inits grid to 2d array with all 0s
-	init : function() {
-		var cols = this.numCols;
-		while(cols--) {
-			var row = [];
-			var rows = this.numRows;
-			while(rows--)
-				row.push(0);
-			this.grid.push(row);
-		}
-	},
+	p1Threats: [],
+	p2Threats: [],
 
-	p1Threats : [],
-	p2Threats : [],
-
-	placePiece : function(col, player) {
-		for (var i = 0; i < this.grid[0].length; i++) {
-			if(this.grid[col][i] === 0) {
-				this.grid[col][i] = player.playerNumber;
-				var space = [col, i];
-				/*if(player.playerNumber == 1) {
-					if(this.p1Threats.indexOf(space) != -1)
-						alert('Player 1 wins!');
-				} else {
-					if(this.p2Threats.indexOf(space) != -1)
-						alert('Player 2 wins!');
-				}*/
-				this.updateThreats(i, col, player.playerNumber);
+	placePiece: function(col, player) {
+		if (!this.currentState)
+			this.currentState = Root;
+		for (var i = 0; i < this.currentState.board[0].length; i++) {
+			if (this.currentState.board[col][i] === 0) {
+				var board = this.currentState.board.slice(0);
+				board[col][i] = player.playerNumber;
+				var move = [col, i];
+				this.currentState = this.currentState.findChild(board) ||
+					Root.search(board) || new State(board, move, player.playerNumber);
 				this.markBoard(i, col, player);
 				return true;
 			}
 		}
 	},
 
-	updateThreats : function(row, col, playerNumber) {
+	//returns true if given player has won in given position
+	checkWin: function(col, row, playerNumber) {
+		for (var xDir = -1; xDir <= 1; xDir++) {
+			for (var yDir = -1; yDir <= 0; yDir++) {
+				if (xDir === 0 && yDir === 0)
+					continue;
+				var x = col;
+				var y = row;
+				//moving to last contiguous player piece
+				while (this.isInBounds(x + xDir, y + yDir) && this.grid[x + xDir][y + yDir] == playerNumber) {
+					x += xDir;
+					y += yDir;
+				}
+				var i;
+				for (i = 0; i < 3 && Game.isInBounds(x - xDir, y - yDir) && Game.grid[x - xDir][y - yDir] == playerNumber; i++) {
+					x -= xDir;
+					y -= yDir;
+				}
+				if (i == 3)
+					return true;
+			}
+		}
+
+	},
+
+	updateThreats: function(col, row, playerNumber) {
 		//returns number of contiguous player pieces in this direction
 		function searchInDirection(x, y, xDir, yDir) {
-			if(!Board.isInBounds(x, y) || Board.grid[x][y] != playerNumber)
+			if (!Game.isInBounds(x, y) || Game.grid[x][y] != playerNumber)
 				return 0;
 			return 1 + searchInDirection(x + xDir, y + yDir, xDir, yDir);
 		}
 		for (var xDir = -1; xDir <= 1; xDir++) {
 			for (var yDir = -1; yDir <= 1; yDir++) {
-				if(xDir === 0 && yDir === 0)
+				if (xDir === 0 && yDir === 0)
 					continue;
 				var x = col;
 				var y = row;
@@ -65,16 +74,16 @@ var Board = {
 					x += xDir;
 					y += yDir;
 				}
-				
-				//check to make sure spaceis possible threat
-				if(this.grid[x][y] === 0) {
+
+				//check to make sure space is possible threat
+				if (this.grid[x][y] === 0) {
 					var threat = [x, y];
 					var playerPieces = searchInDirection(x + xDir, y + yDir, xDir, yDir);
 					playerPieces += searchInDirection(x - xDir, y - yDir, -xDir, -yDir);
-				
-					if(playerPieces >= 3) {
+
+					if (playerPieces >= 3) {
 						console.log(threat);
-						if(playerNumber == 1 && this.p1Threats.indexOf(threat) == -1)
+						if (playerNumber == 1 && this.p1Threats.indexOf(threat) == -1)
 							this.p1Threats.push(threat);
 						else if (playerNumber == 2 && this.p2Threats.indexOf(threat) == -1)
 							this.p2Threats.push(threat);
@@ -84,32 +93,38 @@ var Board = {
 		}
 	},
 
-	isInBounds : function(x,y) {
+	isInBounds: function(x, y) {
 		return x >= 0 && x < this.numCols && y >= 0 && y < this.numRows;
 	},
 
 	//returns the other player's number assuming only a player 1 and player 2 exist
-	otherPlayerNo : function(num) {
+	otherPlayerNo: function(num) {
 		return (num + num) % 3;
 	},
 
-	markBoard : function(row, col, player) {
+	markBoard: function(row, col, player) {
 		var space = $('tr').eq(this.numRows - row).children().eq(col);
-		space.css({"background": player.color});
+		space.css({
+			"background": player.color
+		});
 	}
 };
 
 $('td').mouseenter(function() {
 	var topCell = $('tr')[0].children[this.cellIndex];
-	$(topCell).css({"background": currentPlayer.color});
+	$(topCell).css({
+		"background": currentPlayer.color
+	});
 }).mouseleave(function() {
 	var topCell = $('tr')[0].children[this.cellIndex];
-	$(topCell).css({"background": "none"});
+	$(topCell).css({
+		"background": "none"
+	});
 }).click(function() {
-	Board.placePiece(this.cellIndex, currentPlayer);
+	Game.placePiece(this.cellIndex, currentPlayer);
 	currentPlayer = currentPlayer == player1 ? player2 : player1;
 });
 
-$(document).ready(function() {
-	Board.init();
-});
+/*$(document).ready(function() {
+	Game.init();
+});*/
