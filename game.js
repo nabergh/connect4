@@ -20,15 +20,27 @@ var Game = {
 			this.currentState = Root;
 		for (var i = 0; i < this.currentState.board[0].length; i++) {
 			if (this.currentState.board[col][i] === 0) {
-				var board = this.currentState.board.slice(0);
+				var board = copy2DArray(this.currentState.board);
 				board[col][i] = player.playerNumber;
 				var move = [col, i];
-				this.currentState = this.currentState.findChild(board) ||
-					Root.search(board) || new State(board, move, player.playerNumber);
+				var child = this.currentState.findChild(move);
+				if (child)
+					this.currentState = child;
+				else {
+					this.nextState = new State(board, move, player.playerNumber, this.currentState.p1Threats, this.currentState.p2Threats);//Root.search(board) || 
+					this.currentState.children.push(this.nextState);
+					this.currentState = this.nextState;
+				}
 				this.markBoard(i, col, player);
+				currentPlayer = currentPlayer == player1 ? player2 : player1;
 				return true;
 			}
 		}
+	},
+
+	playBestMove: function() {
+		this.currentState.evaluate(0);
+		this.placePiece(this.currentState.bestMove, this.currentState.player == 1 ? player2 : player1);
 	},
 
 	//returns true if given player has won in given position
@@ -122,7 +134,6 @@ $('td').mouseenter(function() {
 	});
 }).click(function() {
 	Game.placePiece(this.cellIndex, currentPlayer);
-	currentPlayer = currentPlayer == player1 ? player2 : player1;
 });
 
 /*$(document).ready(function() {
