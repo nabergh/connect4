@@ -1,7 +1,19 @@
+#game {
+	width: 1000px;
+	margin: auto;
+}
+
+#options-panel {
+	margin-top: 100px;
+	width: 200px;
+	text-align: center;
+	float: left;
+}
+
 table {
 	width: 700px;
 	height: 700px;
-	margin: auto;
+	/*margin: auto;*/
 }
 
 #first-row td {
@@ -11,4 +23,8 @@ table {
 td {
 	border-width: 1px;
 	border-style: solid;
+}
+
+#p1-wins, #p2-wins, #draw {
+	display: none;
 }

@@ -1,6 +1,6 @@
 var win = Number.MAX_VALUE;
 var loss = -Number.MAX_VALUE;
-var maxDepth = 5;
+var maxDepth = 6;
 
 //board is the current state of the board, move is the move made to get to this state and player is the player that made that move
 function State(board, move, player, p1Threats, p2Threats) {
@@ -14,12 +14,14 @@ function State(board, move, player, p1Threats, p2Threats) {
 		if (player == 1) {
 			if (this.threatIndex(p1Threats) != -1) {
 				this.value = loss;
+				this.winner = 1;
 				return;
 			} else if (this.threatIndex(p2Threats) != -1)
 				p2Threats[this.threatIndex(p2Threats)] = null;
 		} else {
 			if (this.threatIndex(p2Threats) != -1) {
 				this.value = win;
+				this.winner = 2;
 				return;
 			} else if (this.threatIndex(p1Threats) != -1)
 				p1Threats[this.threatIndex(p1Threats)] = null;
@@ -27,6 +29,7 @@ function State(board, move, player, p1Threats, p2Threats) {
 	}
 	if (this.checkDraw()) {
 		this.value = 0;
+		this.winner = 0;
 	} else {
 		if (move)
 			this.updateThreats();
@@ -39,10 +42,9 @@ State.prototype = {
 	board: [],
 	value: null,
 	valueSeeked: null,
-	checkWin: null,
 	p1Threats: [],
 	p2Threats: [],
-	bestMove: [],
+	bestMove: 0, //the bestMove is only the column in which the player should play 
 	evaluate: function(depth) {
 		if (this.value == win || this.value == loss || this.value == 0)
 			return;
@@ -62,6 +64,7 @@ State.prototype = {
 					this.children.push(new State(board, move, nextPlayer, copy2DArray(this.p1Threats), copy2DArray(this.p2Threats)));//Root.search(board) ||
 					if (this.children[this.children.length - 1].value == this.valueSeeked) {
 						this.value = this.valueSeeked;
+						this.bestMove = move[0];
 						return;
 					}
 				}
@@ -73,6 +76,7 @@ State.prototype = {
 					this.children[i].evaluate(depth + 1);
 				if (this.children[i].value == this.valueSeeked) {
 					this.value = this.valueSeeked;
+					this.bestMove = this.children[i].move[0];
 					return;
 				}
 				bestValue = this.betterValue(this.children[i].value, bestValue);
@@ -83,29 +87,8 @@ State.prototype = {
 		}
 	},
 	staticEval: function() {
-		this.value = 5;
-	},
-	checkWin: function(col, row) {
-		for (var xDir = -1; xDir <= 1; xDir++) {
-			for (var yDir = -1; yDir <= 0; yDir++) {
-				if (xDir === 0 && yDir === 0)
-					continue;
-				var x = col;
-				var y = row;
-				//moving to last contiguous player piece
-				while (this.isInBounds(x + xDir, y + yDir) && this.board[x + xDir][y + yDir] == this.player) {
-					x += xDir;
-					y += yDir;
-				}
-				var i;
-				for (i = 0; i < 3 && this.isInBounds(x - xDir, y - yDir) && this.board[x - xDir][y - yDir] == this.player; i++) {
-					x -= xDir;
-					y -= yDir;
-				}
-				if (i == 3)
-					return true;
-			}
-		}
+		if(this.value === undefined || this.value === null)
+			this.value = 5;
 	},
 	updateThreats: function() {
 		var state = this;
@@ -176,7 +159,7 @@ State.prototype = {
 	findChild: function(move) {
 		for (var i = this.children.length - 1; i >= 0 && this.children[i]; i--) {
 			var child = this.children[i];
-			if (child.move == move)
+			if (child.move[0] == move[0] && child.move[1] == move[1])
 				return child;
 		}
 	},
@@ -199,6 +182,7 @@ while (cols--) {
 	board.push(row);
 }
 var Root = new State(board, null, 2, [], []);
+Game.currentState = Root;
 
 function copy2DArray(arr) {
 	var copy = [];
@@ -209,6 +193,7 @@ function copy2DArray(arr) {
 	return copy;
 }
 
+//only works for 2D arrays i.e., must have at least one element that is an array and all elements must be arrays
 function compare2DArray(arr1, arr2) {
 	if (arr1.length != arr2.length || arr1[0].length != arr2[0].length)
 		return false;
