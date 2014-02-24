@@ -63,16 +63,65 @@ var Game = {
 	}
 };
 
-$('td').mouseenter(function() {
-	var topCell = $('tr')[0].children[this.cellIndex];
-	$(topCell).css({
-		"background": currentPlayer.color
-	});
-}).mouseleave(function() {
-	var topCell = $('tr')[0].children[this.cellIndex];
-	$(topCell).css({
-		"background": "none"
-	});
-}).click(function() {
-	setTimeout(Game.placePiece(this.cellIndex, currentPlayer), 100);
+var Root;
+
+function resetGame() {
+	var board = [];
+	var cols = Game.numCols;
+	while (cols--) {
+		var row = [];
+		var rows = Game.numRows;
+		while (rows--)
+			row.push(0);
+		board.push(row);
+	}
+	Root = new State(board, null, 2, [], []);
+	Game.currentState = Root;
+	currentPlayer = player1;
+}
+
+$('#num-cols').val('7');
+$('#num-rows').val('6');
+$('#num-connect').val('4');
+
+$('button').click(function() {
+	var board = $('#board');
+	board.empty();
+	Game.numCols = parseInt($('#num-cols').val());
+	Game.numRows = parseInt($('#num-rows').val());
+	connectN = parseInt($('#num-connect').val()) - 1;
+	if (connectN <= Game.numRows || connectN <= Game.numCols) {
+		if (connectN > 1) {
+			maxDepth = Math.max(2, 8 - Math.floor((Game.numCols - 1) / 2));
+			board.css('width', 80 * Game.numCols);
+			board.css('height', 80 * (Game.numRows + 1));
+			var row = $('<tr></tr>');
+			for (var i = 0; i < Game.numCols; i++) {
+				row.append('<td></td>');
+			}
+			board.append(row);
+			for (var i = 0; i < Game.numRows; i++) {
+				var newRow = row.clone();
+				board.append(newRow);
+			}
+			row.attr('id', 'first-row');
+			resetGame();
+			$('td').mouseover(function() {
+				var topCell = $('tr')[0].children[this.cellIndex];
+				$(topCell).css({
+					"background": currentPlayer.color
+				});
+			}).mouseout(function() {
+				var topCell = $('tr')[0].children[this.cellIndex];
+				$(topCell).css({
+					"background": "none"
+				});
+			}).click(function() {
+				Game.placePiece(this.cellIndex, currentPlayer);
+			});
+		}
+		else
+			alert("You must play a game connecting more than one piece.");
+	} else
+		alert("You must have a board big enough to connect " + connectN + " pieces!");
 });

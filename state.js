@@ -1,6 +1,7 @@
 var win = Number.MAX_VALUE;
 var loss = -Number.MAX_VALUE;
 var maxDepth = 5;
+var connectN = 3; //number of pieces needed to win minus 1
 
 //board is the current state of the board, move is the move made to get to this state and player is the player that made that move
 function State(board, move, player, p1Threats, p2Threats) {
@@ -50,33 +51,32 @@ State.prototype = {
 	p2Threats: [],
 	bestMove: 0, //the bestMove is only the column in which the player should play 
 	evaluate: function(depth) {
-		if(this == Root) {
+		if (this == Root) {
 			this.bestMove = Math.floor(Game.numCols / 2);
 		} else if (this.value == win || this.value == loss || this.value == 0)
 			return;
-		else if (!this.value && depth == maxDepth) {
+		else if ((this.value === undefined || this.value === null) && depth == maxDepth) {
 			this.staticEval();
 		} else {
 			nextPlayer = this.player == 1 ? 2 : 1;
 			//creating children out of all possible moves and checking to see if one of them has the best possible value
 			for (var i = this.board.length - 1; i >= 0; i--) {
 				if (this.board[i][this.board[0].length - 1] === 0) {
-					var move = [i, 0];
-					while (this.board[i][move[1]])
-						move[1]++;
+					var row = 0;
+					while (this.board[i][row])
+						row++;
 					var board = copy2DArray(this.board);
-					board[move[0]][move[1]] = nextPlayer;
-					this.children.push(new State(board, move, nextPlayer, this.p1Threats.slice(0), this.p2Threats.slice(0))); //Root.search(board) ||
+					board[i][row] = nextPlayer;
+					this.children.push(new State(board, [i, row], nextPlayer, copy2DArray(this.p1Threats), copy2DArray(this.p2Threats))); //Root.search(board) ||
 					if (this.children[this.children.length - 1].value == this.valueSeeked) {
 						this.value = this.valueSeeked;
-						this.bestMove = move[0];
+						this.bestMove = i;
 						return;
 					}
 				}
 			}
 			//evaluating all children and assigning this state's value the min value if it's the opponent's turn or max value if it is the player's turn
-			var bestValue = -this.valueSeeked;
-			var bestMove;
+			this.value = -this.valueSeeked;
 			for (var i = this.children.length - 1; i >= 0; i--) {
 				if (this.children[i].value != win && this.children[i].value != loss && this.children[i].value !== 0)
 					this.children[i].evaluate(depth + 1);
@@ -88,12 +88,11 @@ State.prototype = {
 					this.value = this.children[i].value;
 					this.bestMove = this.children[i].move[0];
 					return;
-				} else if (this.isBetter(this.children[i].value, bestValue)) {
-					bestValue = this.children[i].value;
+				} else if (this.isBetter(this.children[i].value, this.value)) {
+					this.value = this.children[i].value;
 					this.bestMove = this.children[i].move[0];
 				}
 			}
-			this.value = bestValue;
 		}
 	},
 	staticEval: function() {
@@ -142,7 +141,7 @@ State.prototype = {
 					var playerPieces = searchInDirection(x + xDir, y + yDir, xDir, yDir);
 					playerPieces += searchInDirection(x - xDir, y - yDir, -xDir, -yDir);
 
-					if (playerPieces >= 3) {
+					if (playerPieces >= connectN) {
 						if (this.player == 1 && this.threatIndex(this.p1Threats) == -1)
 							this.p1Threats.push(threat);
 						else if (this.player == 2 && this.threatIndex(this.p2Threats) == -1)
@@ -166,9 +165,9 @@ State.prototype = {
 	//true if v1 is better than v2
 	isBetter: function(v1, v2) {
 		if (this.valueSeeked == win)
-			return v1 > v2;
+			return v1 >= v2; //must be geq otherwise no move is picked in the situation of a loss
 		else
-			return v1 < v2;
+			return v1 <= v2;
 	},
 	search: function(desiredBoard) {
 		if (compare2DArray(this.board, desiredBoard))
@@ -195,18 +194,6 @@ State.prototype = {
 		return -1;
 	}
 }
-
-var board = [];
-var cols = Game.numCols;
-while (cols--) {
-	var row = [];
-	var rows = Game.numRows;
-	while (rows--)
-		row.push(0);
-	board.push(row);
-}
-var Root = new State(board, null, 2, [], []);
-Game.currentState = Root;
 
 function copy2DArray(arr) {
 	var copy = [];
