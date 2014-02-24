@@ -38,6 +38,8 @@ var Game = {
 				}
 				this.markBoard(i, col, player);
 				currentPlayer = currentPlayer == player1 ? player2 : player1;
+				if (!Game.isOver && currentPlayer == player2)
+					Game.playBestMove();
 				return true;
 			}
 		}
@@ -72,7 +74,5 @@ $('td').mouseenter(function() {
 		"background": "none"
 	});
 }).click(function() {
-	if(Game.placePiece(this.cellIndex, currentPlayer))
-		if(!Game.isOver && currentPlayer == player2)
-			Game.playBestMove();
+	setTimeout(Game.placePiece(this.cellIndex, currentPlayer), 100);
 });
